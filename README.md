@@ -17,6 +17,14 @@ Intended features
 * Unicode/Emoji
 * Custom
 
+Properties
+==========
+* Permanent: not guaranteed during development
+* Expiring/Ethereal: by time or uses, whichever comes first
+* Valid after: inactive until specified condition
+* Preview/Cloaked: require interaction for redirect or before displaying paste
+* Encrypted: protected with password
+
 Workflows
 =========
 ## Use link
@@ -32,3 +40,7 @@ Example [routes](../../wiki/Routes).
 * Select settings and customize to preference.
 * Continue and recieve `yuio.link/<namespace>` selected—(low priority UX improvement:)—immediately while a spinner in the submit button rotates until the link is online and the UI turns from gray to green.
 * Display text if used as pastebin.
+
+Quotes
+======
+“Think redirects, not URLs.” — jooize
