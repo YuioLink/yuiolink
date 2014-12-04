@@ -9,6 +9,14 @@ Intended features
 * Account: manage your links
 * Encryption: optional for all links
 
+[Namespaces](../../wiki/Namespaces)
+==========
+* Numbers
+* Characters
+* Shoutkey
+* Unicode/Emoji
+* Custom
+
 Workflows
 =========
 ## Use link
