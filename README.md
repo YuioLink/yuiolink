@@ -13,8 +13,10 @@ Workflows
 =========
 ## Use link
 * Open `yuio.link/<namespace>`.
-* Encrypted? Input password and continue.
+* *Encrypted?* Input password and continue.
 * Redirect or display paste.
+
+Example [routes](../../wiki/Routes).
 
 ## Create link
 * Open `yuio.link`.
