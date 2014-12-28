@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Yuio.link</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootswatch/3.2.0/cosmo/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class="container" style="margin-top:20px">
+        <h1 class="text-center">
+            <i class="fa fa-paper-plane fa-fw"></i>
+            Yuio.link
+        </h1>
+
+        <div class="row" style="margin-bottom:20px">
+            <div class="col-md-8 col-md-offset-2">
+                <hr>
+                <p class="text-center">This is a simple URL shortening service where the link can only be used once and within 24 hours. Once the link has been used it is deleted from our database and no longer accessible to anyone.</p>
+                <hr>
+
+                {{/* if error is defined }}
+                    <div class="alert alert-danger text-center" role="alert">{{ error }}</div>
+                {{ end */}}
+
+                {{ if . }}
+                    <div class="alert alert-success text-center" role="alert">
+                        Your link was generated successfully, it will be available for 24 hours.<br>
+                        <code>{{ . }}</code>
+                    </div>
+                {{ end }}
+
+                <form method="post">
+                    <div class="form-group">
+                        <input type="text" name="url" class="form-control" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ" id="url">
+                    </div>
+
+                    <button type="submit" class="btn btn-default btn-block">Save</button>
+                </form>
+
+                <hr>
+                <p class="text-center"><small class="text-muted">A project by <a href="http://www.github.com/yuiolink/">Yuio Link</a>. Source code available at <a href="https://github.com/yuiolink/yuio.link">GitHub</a>.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            var input = document.getElementById("url");
+            input.focus();
+            input.select();
+        };
+    </script>
+</body>
+
+</html>
