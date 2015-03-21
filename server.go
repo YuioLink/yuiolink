@@ -83,7 +83,7 @@ func main() {
 			panic("No parameter with key url provided")
 		}
 
-		fmt.Printf("POST recieved, url: %v", url)
+		fmt.Printf("POST received, url: %v", url)
 
 		db, err := sql.Open("mysql", connectionString)
 		if err != nil {
