@@ -6,6 +6,16 @@
     <title>Yuio.link</title>
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootswatch/3.2.0/cosmo/bootstrap.min.css">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+    <script src="/js/jquery-2.1.3.min.js"></script>
+    <script src="/js/sjcl.js"></script>
+    <style>
+                {{ if . }}
+                {{ else }}
+                    #link-panel {
+                        display: none;
+                    }
+                {{ end }}
+    </style>
 </head>
 
 <body>
@@ -25,20 +35,26 @@
                     <div class="alert alert-danger text-center" role="alert">{{ error }}</div>
                 {{ end */}}
 
-                {{ if . }}
-                    <div class="alert alert-success text-center" role="alert">
-                        Your link was generated successfully, it will be available for 24 hours.<br>
-                        <code>{{ . }}</code>
-                    </div>
-                {{ end }}
+                <div class="alert alert-success text-center" id="link-panel" role="alert">
+                    Your link was generated successfully.<br>
+                    <code id="link-element">{{ . }}</code>
+                </div>
 
                 <form method="post">
                     <div class="form-group">
                         <input type="text" name="url" class="form-control" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ" id="url">
+                        <!--<input type="password" name="password" class="form-control" placeholder="Password" id="password">-->
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="encrypt" id="encrypt" checked> Encrypt link
+                        </label>
                     </div>
 
-                    <button type="submit" class="btn btn-default btn-block">Save</button>
+                    <button type="submit" class="btn btn-default btn-block" id="submit">Save</button>
                 </form>
+
+                <!--<input type="text" id="link">-->
 
                 <hr>
                 <p class="text-center"><small class="text-muted">A project by <a href="http://www.github.com/yuiolink/">Yuio Link</a>. Source code available at <a href="https://github.com/yuiolink/yuio.link">GitHub</a>.</small></p>
@@ -47,11 +63,54 @@
     </div>
 
     <script>
-        window.onload = function() {
+        $(function () {
             var input = document.getElementById("url");
             input.focus();
             input.select();
-        };
+
+            var linkElement = document.getElementById("link-element");
+            if (linkElement != null) {
+                linkElement.value = linkElement.value + window.location.hash;
+            }
+
+            var submit = document.getElementById("submit");
+            submit.onclick = function (event) {
+                var url = document.getElementById("url").value;
+                var encrypt = document.getElementById("encrypt");
+                if (encrypt.checked) {
+                    console.log("Encrypt")
+                    var key = generateKey(32);
+
+                    var encryptedLink = sjcl.encrypt(key, url);
+
+                    $.post("/api/link", {
+                        url: encryptedLink,
+                        encrypted: encrypt.checked
+                    }, function (data) {
+                        $("#link-panel").show();
+                        var linkElement = document.getElementById("link-element");
+                        linkElement.innerHTML = data + "#" + key;
+                    }); 
+
+                    event.returnValue=false;
+                    return false;
+                } 
+                else {
+                    console.log("Don't encrypt")
+                }
+            }
+        });
+
+        function generateKey(length)
+        {
+            var key = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            for( var i=0; i < length; i++ )
+                key += possible.charAt(Math.floor(Math.random() * possible.length));
+
+            return key;
+        }
     </script>
 </body>
 
