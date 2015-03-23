@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	log "github.com/Sirupsen/logrus"
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/martini-contrib/render"
@@ -11,12 +12,17 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"yuio.link/utils"
 )
 
 type config struct {
-	SiteUrl  string
+	Domain   string
+	Tls      bool
+	TlsCert  string
+	TlsKey   string
+	BindIp   string
 	Port     int
-	Database dbConfig //`toml:"database"`
+	Database dbConfig
 }
 
 type dbConfig struct {
@@ -39,11 +45,12 @@ func main() {
 		panic(err.Error())
 	}
 
-	root := conf.SiteUrl
-	connectionString := fmt.Sprintf("%s@tcp(%s:%d)/%s", conf.Database.User, conf.Database.Host, conf.Database.Port, conf.Database.Database)
+	log.Info("Configuration parsed...")
+	log.Infof("Configuration values: %s", conf)
 
-	fmt.Printf("Site URL: %s\n", root)
-	fmt.Printf("Connection string: %s\n", connectionString)
+	siteRootUrl := utils.BuildRootUrl(conf.Domain, conf.Port, conf.Tls)
+	log.Infof("Site root URL is set to %s", siteRootUrl)
+	connectionString := fmt.Sprintf("%s@tcp(%s:%d)/%s", conf.Database.User, conf.Database.Host, conf.Database.Port, conf.Database.Database)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 	m := martini.Classic()
@@ -51,81 +58,97 @@ func main() {
 	m.Use(render.Renderer())
 
 	m.Get("/", func(renderer render.Render) {
-		//db, err := sql.Open("mysql", connectionString)
-		//if err != nil {
-		//panic(err.Error())
-		//}
-		//defer db.Close()
-
 		renderer.HTML(200, "index", nil)
 	})
 
-	m.Get("/:link", func(params martini.Params, renderer render.Render) {
+	m.Get("/:linkName", func(params martini.Params, renderer render.Render) {
 		db, err := sql.Open("mysql", connectionString)
 		if err != nil {
 			panic(err.Error())
 		}
 		defer db.Close()
 
-		link := params["link"]
-		redirect := GetRedirectFromLink(db, link)
+		linkName := params["linkName"]
+		redirect := GetRedirectFromLinkName(db, linkName)
 
 		if redirect.Encrypted {
+			log.Info("Link is encrypted, serving decryption page")
 			renderer.HTML(200, "encrypted", redirect.Uri)
 		} else {
+			log.Infof("Redirecting to %s", redirect.Uri)
 			renderer.Redirect(redirect.Uri)
 		}
 	})
 
 	m.Post("/", func(renderer render.Render, request *http.Request) {
-		url := request.FormValue("url")
-		if url == "" {
-			panic("No parameter with key url provided")
+		uri := request.FormValue("uri")
+		if uri == "" {
+			panic("No parameter with key uri provided")
 		}
 
-		fmt.Printf("POST received, url: %v", url)
+		log.WithFields(log.Fields{
+			"uri":       uri,
+			"encrypted": false,
+		}).Info("Creating link")
 
 		db, err := sql.Open("mysql", connectionString)
 		if err != nil {
 			panic(err.Error())
 		}
 
-		link := GenerateRandomLink(6)
-		InsertRedirect(db, link, url, false)
+		linkName := GenerateRandomLinkName(6)
+		log.WithFields(log.Fields{
+			"link_name": linkName,
+			"uri":       uri,
+			"encrypted": false,
+		}).Info("Inserting redirect link")
+		InsertRedirect(db, linkName, uri, false)
 
-		linkUrl := root + link
+		linkUrl := siteRootUrl + linkName
 
 		renderer.HTML(200, "index", linkUrl)
 	})
 
-	m.Post("/api/link", func(r render.Render, request *http.Request) {
-		url := request.FormValue("url")
-		if url == "" {
+	m.Post("/api/redirect", func(r render.Render, request *http.Request) {
+		uri := request.FormValue("uri")
+		if uri == "" {
 			panic("No parameter with key url provided")
 		}
 
-		encrypted, _ := strconv.ParseBool(request.FormValue("encrypted"))
-
-		fmt.Printf("POST recieved, url: %v", url)
+		encrypted, err := strconv.ParseBool(request.FormValue("encrypted"))
+		if err != nil {
+			panic("Invalid value for parameter \"encrypted\"")
+		}
 
 		db, err := sql.Open("mysql", connectionString)
 		if err != nil {
 			panic(err.Error())
 		}
 
-		link := GenerateRandomLink(6)
-		InsertRedirect(db, link, url, encrypted)
+		linkName := GenerateRandomLinkName(6)
+		log.WithFields(log.Fields{
+			"link_name": linkName,
+			"uri":       uri,
+			"encrypted": encrypted,
+		}).Info("Inserting redirect link")
+		InsertRedirect(db, linkName, uri, encrypted)
 
-		linkUrl := root + link
+		linkUrl := siteRootUrl + linkName
 
 		r.JSON(200, linkUrl)
 	})
 
-	//m.Run()
-	m.RunOnAddr(fmt.Sprintf(":%d", conf.Port))
+	m.Post("/api/paste", func(r render.Render, request *http.Request) {})
+
+	binding := fmt.Sprintf("%s:%d", conf.BindIp, conf.Port)
+	if conf.Tls {
+		http.ListenAndServeTLS(binding, conf.TlsCert, conf.TlsKey, m)
+	} else {
+		m.RunOnAddr(binding)
+	}
 }
 
-func GenerateRandomLink(length int) string {
+func GenerateRandomLinkName(length int) string {
 	buffer := make([]rune, length)
 	for i := range buffer {
 		buffer[i] = namespace[rand.Intn(len(namespace))]
@@ -156,8 +179,8 @@ func GetRedirectLinks(db *sql.DB) (string, string) {
 	return link, uri
 }
 
-func GetRedirectFromLink(db *sql.DB, link string) redirect {
-	stmtOut, err := db.Prepare("SELECT r.redirect_uri AS uri, r.encrypted AS encrypted FROM link l JOIN redirect r ON r.link_id = l.id WHERE l.link = ?")
+func GetRedirectFromLinkName(db *sql.DB, linkName string) redirect {
+	stmtOut, err := db.Prepare("SELECT r.redirect_uri AS uri, r.encrypted AS encrypted FROM link l JOIN redirect r ON r.link_id = l.id WHERE l.link_name = ?")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -166,7 +189,7 @@ func GetRedirectFromLink(db *sql.DB, link string) redirect {
 	var uri string
 	var encrypted bool
 	var redirect redirect
-	err = stmtOut.QueryRow(link).Scan(&uri, &encrypted)
+	err = stmtOut.QueryRow(linkName).Scan(&uri, &encrypted)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -177,15 +200,15 @@ func GetRedirectFromLink(db *sql.DB, link string) redirect {
 	return redirect
 }
 
-func GetRedirectUriFromLink(db *sql.DB, link string) string {
-	stmtOut, err := db.Prepare("SELECT r.redirect_uri FROM link l JOIN redirect r ON r.link_id = l.id WHERE l.link = ?")
+func GetRedirectUriFromLinkName(db *sql.DB, linkName string) string {
+	stmtOut, err := db.Prepare("SELECT r.redirect_uri FROM link l JOIN redirect r ON r.link_id = l.id WHERE l.link_name = ?")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer stmtOut.Close()
 
 	var redirectUrl string
-	err = stmtOut.QueryRow(link).Scan(&redirectUrl)
+	err = stmtOut.QueryRow(linkName).Scan(&redirectUrl)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -193,14 +216,14 @@ func GetRedirectUriFromLink(db *sql.DB, link string) string {
 	return redirectUrl
 }
 
-func InsertRedirect(db *sql.DB, link string, uri string, encrypted bool) bool {
-	linkIns, err := db.Prepare("INSERT INTO link (link, date_created) VALUES (?, NOW())")
+func InsertRedirect(db *sql.DB, linkName string, uri string, encrypted bool) bool {
+	linkIns, err := db.Prepare("INSERT INTO link (link_name, date_created) VALUES (?, NOW())")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer linkIns.Close()
 
-	result, err := linkIns.Exec(link)
+	result, err := linkIns.Exec(linkName)
 	if err != nil {
 		panic(err.Error())
 	}
