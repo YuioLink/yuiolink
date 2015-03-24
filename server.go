@@ -96,7 +96,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateRandomLinkName(6)
+		linkName := GenerateUniqueLinkName(db, 6)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"uri":       uri,
@@ -125,7 +125,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateRandomLinkName(6)
+		linkName := GenerateUniqueLinkName(db, 6)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"uri":       uri,
@@ -156,6 +156,17 @@ func GenerateRandomLinkName(length int) string {
 	return string(buffer)
 }
 
+func GenerateUniqueLinkName(db *sql.DB, length int) string {
+	var linkName string
+	for true {
+		linkName = GenerateRandomLinkName(6)
+		if !LinkNameExists(db, linkName) {
+			break
+		}
+	}
+	return linkName
+}
+
 func GetRedirectLinks(db *sql.DB) (string, string) {
 	stmtOut, err := db.Prepare("SELECT l.link, r.redirect_uri FROM link l JOIN redirect r ON r.link_id = l.id")
 	if err != nil {
@@ -177,6 +188,22 @@ func GetRedirectLinks(db *sql.DB) (string, string) {
 	}
 
 	return link, uri
+}
+
+func LinkNameExists(db *sql.DB, linkName string) bool {
+	stmtOut, err := db.Prepare("SELECT EXISTS (SELECT 1 FROM link WHERE link_name = ?)")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer stmtOut.Close()
+
+	var result bool
+	err = stmtOut.QueryRow(linkName).Scan(&result)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return result
 }
 
 func GetRedirectFromLinkName(db *sql.DB, linkName string) redirect {
