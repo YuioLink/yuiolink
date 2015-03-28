@@ -5,7 +5,7 @@ CREATE TABLE `link` (
     `date_expired` datetime NULL,
     `uses` int(11) NOT NULL DEFAULT -1,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `link` (`link`)
+    UNIQUE KEY `link_name` (`link_name`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE `redirect` (
