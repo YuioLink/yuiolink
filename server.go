@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"yuio.link/utils"
+	"github.com/yuiolink/yuiolink/utils"
 )
 
 type config struct {
