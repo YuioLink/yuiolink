@@ -3,7 +3,7 @@ CREATE TABLE `link` (
     `link_name` varchar(32) NOT NULL,
     `date_created` datetime NOT NULL,
     `date_expired` datetime NULL,
-    `uses` int(11) NOT NULL DEFAULT -1
+    `uses` int(11) NOT NULL DEFAULT -1,
     PRIMARY KEY (`id`),
     UNIQUE KEY `link` (`link`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
