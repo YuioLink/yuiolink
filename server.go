@@ -29,6 +29,7 @@ type dbConfig struct {
 	Host     string
 	Port     int
 	User     string
+	Password string
 	Database string
 }
 
@@ -50,7 +51,7 @@ func main() {
 
 	siteRootUrl := utils.BuildRootUrl(conf.Domain, conf.Port, conf.Tls)
 	log.Infof("Site root URL is set to %s", siteRootUrl)
-	connectionString := fmt.Sprintf("%s@tcp(%s:%d)/%s", conf.Database.User, conf.Database.Host, conf.Database.Port, conf.Database.Database)
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.Database.User, conf.Database.Password, conf.Database.Host, conf.Database.Port, conf.Database.Database)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 	m := martini.Classic()
