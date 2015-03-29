@@ -16,6 +16,7 @@ import (
 )
 
 type config struct {
+	Protocol string
 	Domain   string
 	Tls      bool
 	TlsCert  string
@@ -49,7 +50,7 @@ func main() {
 	log.Info("Configuration parsed...")
 	log.Infof("Configuration values: %s", conf)
 
-	siteRootUrl := utils.BuildRootUrl(conf.Domain, conf.Port, conf.Tls)
+	siteRootUrl := utils.BuildRootUrl(conf.Protocol, conf.Domain, conf.Port, conf.Tls)
 	log.Infof("Site root URL is set to %s", siteRootUrl)
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.Database.User, conf.Database.Password, conf.Database.Host, conf.Database.Port, conf.Database.Database)
 
