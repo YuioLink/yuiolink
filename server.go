@@ -161,7 +161,7 @@ func GenerateRandomLinkName(length int) string {
 func GenerateUniqueLinkName(db *sql.DB, length int) string {
 	var linkName string
 	for true {
-		linkName = GenerateRandomLinkName(6)
+		linkName = GenerateRandomLinkName(length)
 		if !LinkNameExists(db, linkName) {
 			break
 		}
