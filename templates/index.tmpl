@@ -26,7 +26,7 @@
         <div class="row" style="margin-bottom:20px">
             <div class="col-md-8 col-md-offset-2">
                 <hr>
-                <p class="text-center">This is a simple URL shortening service with client-side encryption capabilities.</p>
+                <p class="text-center">Redirect any link, and secure it with client‐side encryption.</p>
                 <hr>
 
                 {{/* if error is defined }}
@@ -55,7 +55,7 @@
                 <!--<input type="text" id="link">-->
 
                 <hr>
-                <p class="text-center"><small class="text-muted">A project by <a href="http://www.github.com/yuiolink/">Yuio Link</a>. Source code available at <a href="https://github.com/yuiolink/yuio.link">GitHub</a>.</small></p>
+                <p class="text-center"><small class="text-muted">A project by <a href="https://www.github.com/yuiolink/">Yuio Link</a>. Source code available at <a href="https://github.com/yuiolink/yuiolink">GitHub</a>.</small></p>
             </div>
         </div>
     </div>
@@ -92,11 +92,11 @@
                         $("#link-panel").show();
                         var linkElement = document.getElementById("link-element");
                         linkElement.innerHTML = data + "#" + key;
-                    }); 
+                    });
 
                     event.returnValue=false;
                     return false;
-                } 
+                }
                 else {
                     console.log("Don't encrypt")
                 }
