@@ -6,7 +6,6 @@ import (
 
 func BuildRootUrl(protocol string, domain string, port int, tls bool) string {
 	var rootUrl string
-
 	if protocol != "" {
 		rootUrl = fmt.Sprint(protocol, "://", domain)
 	} else {

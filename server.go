@@ -128,7 +128,7 @@ func main() {
 		}
 
 		linkName := GenerateUniqueLinkName(db, 6)
-		log.WithFields(log.Fields{
+		log.WithFields(log.Fields {
 			"link_name": linkName,
 			"uri":       uri,
 			"encrypted": encrypted,
