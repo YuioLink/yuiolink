@@ -6,7 +6,9 @@
     <body>
         <script>
             var key = window.location.hash;
-            var encryptedUri = {{ uri }};
+{% autoescape off %}
+            var encryptedUri = '{{ uri }}';
+{% endautoescape %}
             try {
                 var decryptedUri = sjcl.decrypt(key.substr(1), encryptedUri);
                 window.location = decryptedUri;
