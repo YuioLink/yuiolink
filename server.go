@@ -67,6 +67,7 @@ func main() {
 	log.Info("Configuration parsed...")
 	log.Infof("Configuration values: %s", conf)
 
+	const linkNameLength = 6
 	siteRootUrl := utils.BuildRootUrl(conf.Protocol, conf.Domain, conf.Port, conf.Tls)
 	log.Infof("Site root URL is set to %s", siteRootUrl)
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.Database.User, conf.Database.Password, conf.Database.Host, conf.Database.Port, conf.Database.Database)
@@ -118,7 +119,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, 6)
+		linkName := GenerateUniqueLinkName(db, linkNameLength)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"uri":       uri,
@@ -141,7 +142,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, 6)
+		linkName := GenerateUniqueLinkName(db, linkNameLength)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 		}).Info("Inserting paste link")
@@ -151,7 +152,8 @@ func main() {
 
 		renderHtml("templates/paste.tmpl", pongo2.Context{"link": linkUrl}, response)
 	})
-	m.Post("/api/redirect", func(request *http.Request, response http.ResponseWriter) {
+
+	m.Post("/api/redirect", func(request *http.Request, response http.ResponseWriter) string {
 		uri := request.FormValue("uri")
 		if uri == "" {
 			panic("No parameter with key url provided")
@@ -167,7 +169,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, 6)
+		linkName := GenerateUniqueLinkName(db, linkNameLength)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"uri":       uri,
@@ -177,10 +179,11 @@ func main() {
 
 		linkUrl := siteRootUrl + linkName
 
-		renderJson(linkUrl, response)
+		return linkUrl
+		//renderJson(linkUrl, response)
 	})
 
-	m.Post("/api/paste", func(request *http.Request, response http.ResponseWriter) {
+	m.Post("/api/paste", func(request *http.Request, response http.ResponseWriter) string {
 		content := request.FormValue("content")
 		if content == "" {
 			panic("No parameter with key content provided")
@@ -196,7 +199,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, 6)
+		linkName := GenerateUniqueLinkName(db, linkNameLength)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"encrypted": encrypted,
@@ -205,7 +208,8 @@ func main() {
 
 		linkUrl := siteRootUrl + linkName
 
-		renderJson(linkUrl, response)
+		return linkUrl
+		//renderJson(linkUrl, response)
 	})
 
 	binding := fmt.Sprintf("%s:%d", conf.BindIp, conf.Port)
