@@ -6,7 +6,7 @@
     <body>
         <script>
             var key = window.location.hash;
-            var encryptedUri = {{ . }};
+            var encryptedUri = {{ uri }};
             try {
                 var decryptedUri = sjcl.decrypt(key.substr(1), encryptedUri);
                 window.location = decryptedUri;

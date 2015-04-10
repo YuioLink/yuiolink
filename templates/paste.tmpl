@@ -1,0 +1,28 @@
+{% extends "minimal-layout.tmpl" %}
+
+{% block head %}
+<style type="text/css" media="screen">
+    #editor { 
+        min-height: 500px;
+        margin: 50px 100px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="editor"></div>
+{% endblock %}
+
+{% block script %}
+<script src="/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="/js/theme-monokai.js" type="text/javascript" charset="utf-8"></script>
+<script>
+
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/chrome");
+    editor.getSession().setMode("ace/mode/markdown");
+    editor.setShowPrintMargin(false);
+    editor.setOption("showGutter", false);
+    editor.setHighlightActiveLine(false);
+</script>
+{% endblock %}
