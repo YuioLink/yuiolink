@@ -1,0 +1,26 @@
+{% extends "minimal-layout.tmpl" %}
+
+{% block content %}
+<div id="content"></div>
+{% endblock %}
+
+{% block script %}
+<script src="/js/markdown.min.js"></script>
+<script>
+    var key = window.location.hash;
+{% autoescape off %}
+    var encryptedContent = '{{ content }}';
+{% endautoescape %}
+    try {
+        var decryptedContent = sjcl.decrypt(key.substr(1), encryptedContent);
+
+        var html = markdown.toHTML(decryptedContent);
+
+        var contentElement = document.getElementById("content");
+        contentElement.innerHTML = html;
+    } 
+    catch (ex) {
+        console.log("Could not decrypt paste content", ex);
+    }
+</script>
+{% endblock %}

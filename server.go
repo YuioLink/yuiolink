@@ -2,14 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/flosch/pongo2"
+	_ "github.com/flosch/pongo2-addons"
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
-	//"github.com/martini-contrib/render"
-	"encoding/json"
 	"github.com/yuiolink/yuiolink/utils"
 	"math/rand"
 	"net/http"
@@ -36,8 +36,8 @@ type dbConfig struct {
 	Database string
 }
 
-type redirect struct {
-	Uri       string
+type linkContent struct {
+	Content   string
 	Encrypted bool
 }
 
@@ -92,14 +92,25 @@ func main() {
 		defer db.Close()
 
 		linkName := params["linkName"]
-		redirect := GetRedirectFromLinkName(db, linkName)
+		var content linkContent
+		content, err = GetRedirectFromLinkName(db, linkName)
 
-		if redirect.Encrypted {
+		if err == nil {
+			if content.Encrypted {
+				log.Info("Link is encrypted, serving decryption page")
+				renderHtml("templates/encrypted.tmpl", pongo2.Context{"uri": content.Content}, response)
+			} else {
+				log.Infof("Redirecting to %s", content.Content)
+				http.Redirect(response, request, content.Content, 303)
+			}
+			return
+		}
+
+		content, err = GetPasteFromLinkName(db, linkName)
+		if err == nil {
 			log.Info("Link is encrypted, serving decryption page")
-			renderHtml("templates/encrypted.tmpl", pongo2.Context{"uri": redirect.Uri}, response)
-		} else {
-			log.Infof("Redirecting to %s", redirect.Uri)
-			http.Redirect(response, request, redirect.Uri, 303)
+			renderHtml("templates/show-paste.tmpl", pongo2.Context{"content": content.Content, "encrypted": content.Encrypted}, response)
+			return
 		}
 	})
 

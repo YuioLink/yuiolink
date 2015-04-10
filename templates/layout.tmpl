@@ -32,6 +32,53 @@
         </div>
     </div>
 
+    <script src="/js/jquery-2.1.3.min.js"></script>
+    <script src="/js/sjcl.js"></script>
+    <script>
+        sjcl.random.startCollectors();
+
+        function getRandomValues(length) {
+            var randomWords;
+
+            if (window.crypto && window.crypto.getRandomValues) {
+                randomWords = new Int32Array(length);
+                window.crypto.getRandomValues(randomWords);
+            }
+            else if (window.msCrypto && window.msCrypto.getRandomValues) {
+                randomWords = new Int32Array(length);
+                window.msCrypto.getRandomValues(randomWords);
+            }
+            else if (sjcl.random.isReady()) {
+                randomWords = sjcl.random.randomWords(length);
+            }
+            else {
+                throw "Could not generate secure random words";
+            }
+
+            return randomWords;
+        }
+
+        function generateKey(length) {
+            var keyspace = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghkmnpqrstuvwxyz23456789";
+            var key = "";
+
+            while (key.length < length) {
+                var randomValues = getRandomValues(length);
+                var bytes = new Uint8Array(randomValues);
+
+                var length = bytes.byteLength;
+                for (var i = 0; i < length; i++) {
+                    var c = String.fromCharCode(bytes[i]);
+                    if (keyspace.indexOf(c) != -1) {
+                        key += c;
+                    }
+                }
+            }
+
+            return key.substr(0, length);
+        }
+    </script>
+
     {% block script %}{% endblock %}
 </body>
 </html>

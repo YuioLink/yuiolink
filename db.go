@@ -44,7 +44,7 @@ func LinkNameExists(db *sql.DB, linkName string) bool {
 	return result
 }
 
-func GetRedirectFromLinkName(db *sql.DB, linkName string) redirect {
+func GetRedirectFromLinkName(db *sql.DB, linkName string) (content linkContent, err error) {
 	stmtOut, err := db.Prepare("SELECT r.redirect_uri AS uri, r.encrypted AS encrypted FROM link l JOIN redirect r ON r.link_id = l.id WHERE l.link_name = ?")
 	if err != nil {
 		panic(err.Error())
@@ -53,32 +53,39 @@ func GetRedirectFromLinkName(db *sql.DB, linkName string) redirect {
 
 	var uri string
 	var encrypted bool
-	var redirect redirect
+	var redirect linkContent
+
 	err = stmtOut.QueryRow(linkName).Scan(&uri, &encrypted)
 	if err != nil {
-		panic(err.Error())
+		return redirect, err
 	}
 
-	redirect.Uri = uri
+	redirect.Content = uri
 	redirect.Encrypted = encrypted
 
-	return redirect
+	return redirect, nil
 }
 
-func GetRedirectUriFromLinkName(db *sql.DB, linkName string) string {
-	stmtOut, err := db.Prepare("SELECT r.redirect_uri FROM link l JOIN redirect r ON r.link_id = l.id WHERE l.link_name = ?")
+func GetPasteFromLinkName(db *sql.DB, linkName string) (p linkContent, err error) {
+	stmtOut, err := db.Prepare("SELECT p.content AS uri, p.encrypted AS encrypted FROM link l JOIN paste p ON p.link_id = l.id WHERE l.link_name = ?")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer stmtOut.Close()
 
-	var redirectUrl string
-	err = stmtOut.QueryRow(linkName).Scan(&redirectUrl)
+	var content string
+	var encrypted bool
+	var paste linkContent
+
+	err = stmtOut.QueryRow(linkName).Scan(&content, &encrypted)
 	if err != nil {
-		panic(err.Error())
+		return paste, err
 	}
 
-	return redirectUrl
+	paste.Content = content
+	paste.Encrypted = encrypted
+
+	return paste, nil
 }
 
 func InsertLink(db *sql.DB, linkName string) int64 {

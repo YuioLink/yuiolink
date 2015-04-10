@@ -6,22 +6,75 @@
         min-height: 500px;
         margin: 50px 100px;
     }
+    #link-panel {
+        display: none;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div id="editor"></div>
+<div class="alert alert-success text-center" id="link-panel" role="alert">
+    Your link was generated successfully.<br>
+    <code id="link-element">{{ link }}</code>
+</div>
+
+<form method="POST">
+    <div id="editor"></div>
+    <noscript>
+        <textarea></textarea>
+    </noscript>
+    <div class="checkbox">
+        <label>
+            <input type="checkbox" name="encrypt" id="encrypt" checked> Encrypt content
+        </label>
+    </div>
+    <button type="submit" class="btn btn-default btn-block" id="submit">Paste</button>
+</form>
 {% endblock %}
 
 {% block script %}
 <script src="/js/ace.js" type="text/javascript" charset="utf-8"></script>
 <script src="/js/theme-monokai.js" type="text/javascript" charset="utf-8"></script>
 <script>
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/chrome");
-    editor.getSession().setMode("ace/mode/markdown");
-    editor.setShowPrintMargin(false);
-    editor.setOption("showGutter", false);
-    editor.setHighlightActiveLine(false);
+    $(function () {
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/chrome");
+        editor.getSession().setMode("ace/mode/markdown");
+        editor.setShowPrintMargin(false);
+        editor.setOption("showGutter", false);
+        editor.setHighlightActiveLine(false);
+
+        var linkElement = document.getElementById("link-element");
+        if (linkElement != null) {
+            linkElement.value = linkElement.value + window.location.hash;
+        }
+
+        var submit = document.getElementById("submit");
+        submit.onclick = function (event) {
+            var content = editor.getValue();
+            var encrypt = document.getElementById("encrypt");
+            if (encrypt.checked) {
+                console.log("Encrypt")
+                var key = generateKey(32);
+
+                var encryptedContent = sjcl.encrypt(key, content);
+
+                $.post("/api/paste", {
+                    content: encryptedContent,
+                    encrypted: encrypt.checked
+                }, function (data) {
+                    $("#link-panel").show();
+                    var linkElement = document.getElementById("link-element");
+                    linkElement.innerHTML = data + "#" + key;
+                });
+
+                event.returnValue=false;
+                return false;
+            }
+            else {
+                console.log("Don't encrypt")
+            }
+        }
+    });
 </script>
 {% endblock %}
