@@ -43,6 +43,7 @@
         editor.setShowPrintMargin(false);
         editor.setOption("showGutter", false);
         editor.setHighlightActiveLine(false);
+        editor.setFontSize(16);
 
         var linkElement = document.getElementById("link-element");
         if (linkElement != null) {
@@ -56,24 +57,26 @@
             if (encrypt.checked) {
                 console.log("Encrypt")
                 var key = generateKey(32);
-
-                var encryptedContent = sjcl.encrypt(key, content);
-
-                $.post("/api/paste", {
-                    content: encryptedContent,
-                    encrypted: encrypt.checked
-                }, function (data) {
-                    $("#link-panel").show();
-                    var linkElement = document.getElementById("link-element");
-                    linkElement.innerHTML = data + "#" + key;
-                });
-
-                event.returnValue=false;
-                return false;
+                content = sjcl.encrypt(key, content);
             }
             else {
                 console.log("Don't encrypt")
             }
+
+            $.post("/api/paste", {
+                "content": content,
+                encrypted: encrypt.checked
+            }, function (data) {
+                $("#link-panel").show();
+                var linkElement = document.getElementById("link-element");
+                linkElement.innerHTML = data;
+                if (encrypt.checked) {
+                    linkElement.innerHTML += "#" + key;
+                }
+            });
+
+            event.returnValue=false;
+            return false;
         }
     });
 </script>
