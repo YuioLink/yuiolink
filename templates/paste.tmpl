@@ -19,6 +19,10 @@
 </div>
 
 <form method="POST">
+    <select id="content_type" name="content_type">
+        <option value="javascript">Javascript</option>
+        <option value="markdown" selected>Markdown</option>
+    </select>
     <div id="editor"></div>
     <noscript>
         <textarea></textarea>
@@ -34,7 +38,6 @@
 
 {% block script %}
 <script src="/js/ace.js" type="text/javascript" charset="utf-8"></script>
-<script src="/js/theme-monokai.js" type="text/javascript" charset="utf-8"></script>
 <script>
     $(function () {
         var editor = ace.edit("editor");
@@ -53,11 +56,12 @@
         var submit = document.getElementById("submit");
         submit.onclick = function (event) {
             var content = editor.getValue();
+            var contentType = $('#content_type').find(":selected").val();
             var encrypt = document.getElementById("encrypt");
             if (encrypt.checked) {
                 console.log("Encrypt")
                 var key = generateKey(32);
-                content = sjcl.encrypt(key, content);
+                content = sjcl.encrypt(key, content, {ks:256});
             }
             else {
                 console.log("Don't encrypt")
@@ -65,7 +69,8 @@
 
             $.post("/api/paste", {
                 "content": content,
-                encrypted: encrypt.checked
+                "content_type": contentType,
+                "encrypted": encrypt.checked
             }, function (data) {
                 $("#link-panel").show();
                 var linkElement = document.getElementById("link-element");

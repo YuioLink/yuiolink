@@ -1,6 +1,7 @@
 {% extends "minimal-layout.tmpl" %}
 
 {% block head %}
+    <link rel="stylesheet" href="/css/prism.css" data-noprefix />
     <style>
         #content {
             margin-top: 50px;
@@ -9,32 +10,49 @@
 {% endblock %}
 
 {% block content %}
-<div id="content">
     {% if not encrypted %}
-        {{ content|markdown }}
+        {% if contentType == "markdown" %}
+            <div id="content">
+                {{ content|markdown }}
+            </div>
+        {% else %}
+            <code id="content">
+                {{ content|pygments:contentType }}
+            </code>
+        {% endif %}
+    {% else %}
+        {% if contentType == "markdown" %}
+            <div id="content"></div>
+        {% else %}
+            <code id="content" class="language-{{ contentType }}"></code>
+        {% endif %}
     {% endif %}
-</div>
 {% endblock %}
 
 {% block script %}
     {% if encrypted %}
-    <script src="/js/markdown.min.js"></script>
-    <script>
-        var key = window.location.hash;
-    {% autoescape off %}
-        var encryptedContent = '{{ content }}';
-    {% endautoescape %}
-        try {
-            var decryptedContent = sjcl.decrypt(key.substr(1), encryptedContent);
+        <script src="/js/markdown.min.js"></script>
+        <script src="/js/prism.js" data-default-language="markup"></script>
+        <script>
+            var key = window.location.hash;
+        {% autoescape off %}
+            var encryptedContent = '{{ content }}';
+        {% endautoescape %}
+            try {
+                var decryptedContent = sjcl.decrypt(key.substr(1), encryptedContent);
 
-            var html = markdown.toHTML(decryptedContent);
+                {% if contentType == "markdown" %}
+                var html = markdown.toHTML(decryptedContent);
+                {% else %}
+                var html = decryptedContent;
+                {% endif %}
 
-            var contentElement = document.getElementById("content");
-            contentElement.innerHTML = html;
-        } 
-        catch (ex) {
-            console.log("Could not decrypt paste content", ex);
-        }
-    </script>
+                var contentElement = document.getElementById("content");
+                contentElement.innerHTML = html;
+            } 
+            catch (ex) {
+                console.log("Could not decrypt paste content", ex);
+            }
+        </script>
     {% endif %}
 {% endblock %}

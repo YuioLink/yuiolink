@@ -3,7 +3,19 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/yuiolink/yuiolink/utils"
 )
+
+func GenerateUniqueLinkName(db *sql.DB, length int, namespace []rune) string {
+	var linkName string
+	for true {
+		linkName = utils.GenerateRandomLinkName(length, namespace)
+		if !LinkNameExists(db, linkName) {
+			break
+		}
+	}
+	return linkName
+}
 
 func GetRedirectLinks(db *sql.DB) (string, string) {
 	stmtOut, err := db.Prepare("SELECT l.link, r.redirect_uri FROM link l JOIN redirect r ON r.link_id = l.id")
@@ -67,22 +79,24 @@ func GetRedirectFromLinkName(db *sql.DB, linkName string) (content linkContent, 
 }
 
 func GetPasteFromLinkName(db *sql.DB, linkName string) (p linkContent, err error) {
-	stmtOut, err := db.Prepare("SELECT p.content AS uri, p.encrypted AS encrypted FROM link l JOIN paste p ON p.link_id = l.id WHERE l.link_name = ?")
+	stmtOut, err := db.Prepare("SELECT p.content AS content, p.content_type AS contentType, p.encrypted AS encrypted FROM link l JOIN paste p ON p.link_id = l.id WHERE l.link_name = ?")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer stmtOut.Close()
 
 	var content string
+	var contentType string
 	var encrypted bool
 	var paste linkContent
 
-	err = stmtOut.QueryRow(linkName).Scan(&content, &encrypted)
+	err = stmtOut.QueryRow(linkName).Scan(&content, &contentType, &encrypted)
 	if err != nil {
 		return paste, err
 	}
 
 	paste.Content = content
+	paste.ContentType = contentType
 	paste.Encrypted = encrypted
 
 	return paste, nil
@@ -125,16 +139,16 @@ func InsertRedirect(db *sql.DB, linkName string, uri string, encrypted bool) boo
 	return true
 }
 
-func InsertPaste(db *sql.DB, linkName string, content string, encrypted bool) bool {
+func InsertPaste(db *sql.DB, linkName string, content string, contentType string, encrypted bool) bool {
 	linkId := InsertLink(db, linkName)
 
-	pasteIns, err := db.Prepare("INSERT INTO paste (link_id, content, encrypted) VALUES (?, ?, ?)")
+	pasteIns, err := db.Prepare("INSERT INTO paste (link_id, content, content_type, encrypted) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer pasteIns.Close()
 
-	_, err = pasteIns.Exec(linkId, content, encrypted)
+	_, err = pasteIns.Exec(linkId, content, contentType, encrypted)
 	if err != nil {
 		panic(err.Error())
 	}

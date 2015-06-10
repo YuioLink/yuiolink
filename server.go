@@ -18,14 +18,15 @@ import (
 )
 
 type config struct {
-	Protocol string
-	Domain   string
-	Tls      bool
-	TlsCert  string
-	TlsKey   string
-	BindIp   string
-	Port     int
-	Database dbConfig
+	Protocol        string
+	Domain          string
+	Tls             bool
+	TlsCert         string
+	TlsKey          string
+	BindIp          string
+	Port            int
+	Database        dbConfig
+	ChacheDirectory string
 }
 
 type dbConfig struct {
@@ -37,8 +38,9 @@ type dbConfig struct {
 }
 
 type linkContent struct {
-	Content   string
-	Encrypted bool
+	Content     string
+	ContentType string
+	Encrypted   bool
 }
 
 var namespace = []rune("yuphjknm")
@@ -75,6 +77,7 @@ func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	m := martini.Classic()
 	m.Use(martini.Static("js", martini.StaticOptions{Prefix: "js"}))
+	m.Use(martini.Static("css", martini.StaticOptions{Prefix: "css"}))
 
 	m.Get("/", func(response http.ResponseWriter) {
 		renderHtml("templates/index.tmpl", nil, response)
@@ -85,6 +88,8 @@ func main() {
 	})
 
 	m.Get("/:linkName", func(params martini.Params, response http.ResponseWriter, request *http.Request) {
+		log.Info("Requesting link")
+
 		db, err := sql.Open("mysql", connectionString)
 		if err != nil {
 			panic(err.Error())
@@ -108,9 +113,11 @@ func main() {
 
 		content, err = GetPasteFromLinkName(db, linkName)
 		if err == nil {
-			log.Info("Link is encrypted, serving decryption page")
-			renderHtml("templates/show-paste.tmpl", pongo2.Context{"content": content.Content, "encrypted": content.Encrypted}, response)
+			log.Info("Found paste")
+			renderHtml("templates/show-paste.tmpl", pongo2.Context{"content": content.Content, "contentType": content.ContentType, "encrypted": content.Encrypted}, response)
 			return
+		} else {
+			panic(err.Error())
 		}
 	})
 
@@ -130,7 +137,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, linkNameLength)
+		linkName := GenerateUniqueLinkName(db, linkNameLength, namespace)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"uri":       uri,
@@ -148,16 +155,18 @@ func main() {
 			panic("No parameter with key content provided")
 		}
 
+		contentType := request.FormValue("content_type")
+
 		db, err := sql.Open("mysql", connectionString)
 		if err != nil {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, linkNameLength)
+		linkName := GenerateUniqueLinkName(db, linkNameLength, namespace)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 		}).Info("Inserting paste link")
-		InsertPaste(db, linkName, content, false)
+		InsertPaste(db, linkName, content, contentType, false)
 
 		linkUrl := siteRootUrl + linkName
 
@@ -180,7 +189,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, linkNameLength)
+		linkName := GenerateUniqueLinkName(db, linkNameLength, namespace)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"uri":       uri,
@@ -191,13 +200,19 @@ func main() {
 		linkUrl := siteRootUrl + linkName
 
 		return linkUrl
-		//renderJson(linkUrl, response)
 	})
 
 	m.Post("/api/paste", func(request *http.Request, response http.ResponseWriter) string {
+		log.Infof("Request: %s", request)
+
 		content := request.FormValue("content")
 		if content == "" {
 			panic("No parameter with key content provided")
+		}
+
+		contentType := request.FormValue("content_type")
+		if contentType == "" {
+			panic("Invalid value for parameter \"content_type\"")
 		}
 
 		encrypted, err := strconv.ParseBool(request.FormValue("encrypted"))
@@ -210,17 +225,16 @@ func main() {
 			panic(err.Error())
 		}
 
-		linkName := GenerateUniqueLinkName(db, linkNameLength)
+		linkName := GenerateUniqueLinkName(db, linkNameLength, namespace)
 		log.WithFields(log.Fields{
 			"link_name": linkName,
 			"encrypted": encrypted,
 		}).Info("Inserting paste link")
-		InsertPaste(db, linkName, content, encrypted)
+		InsertPaste(db, linkName, content, contentType, encrypted)
 
 		linkUrl := siteRootUrl + linkName
 
 		return linkUrl
-		//renderJson(linkUrl, response)
 	})
 
 	binding := fmt.Sprintf("%s:%d", conf.BindIp, conf.Port)
@@ -229,23 +243,4 @@ func main() {
 	} else {
 		m.RunOnAddr(binding)
 	}
-}
-
-func GenerateRandomLinkName(length int) string {
-	buffer := make([]rune, length)
-	for i := range buffer {
-		buffer[i] = namespace[rand.Intn(len(namespace))]
-	}
-	return string(buffer)
-}
-
-func GenerateUniqueLinkName(db *sql.DB, length int) string {
-	var linkName string
-	for true {
-		linkName = GenerateRandomLinkName(length)
-		if !LinkNameExists(db, linkName) {
-			break
-		}
-	}
-	return linkName
 }

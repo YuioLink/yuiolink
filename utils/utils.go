@@ -2,7 +2,16 @@ package utils
 
 import (
 	"fmt"
+	"math/rand"
 )
+
+func GenerateRandomLinkName(length int, namespace []rune) string {
+	buffer := make([]rune, length)
+	for i := range buffer {
+		buffer[i] = namespace[rand.Intn(len(namespace))]
+	}
+	return string(buffer)
+}
 
 func BuildRootUrl(protocol string, domain string, port int, tls bool) string {
 	var rootUrl string
