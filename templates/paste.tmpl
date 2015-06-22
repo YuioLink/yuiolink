@@ -20,6 +20,7 @@
 
 <form method="POST">
     <select id="content_type" name="content_type">
+        <option value="csharp">C#</option>
         <option value="javascript">Javascript</option>
         <option value="markdown" selected>Markdown</option>
     </select>
@@ -52,6 +53,12 @@
         if (linkElement != null) {
             linkElement.value = linkElement.value + window.location.hash;
         }
+
+        var contentTypeElement = document.getElementById("content_type");
+        contentTypeElement.onchange = function (event) {
+            var contentType = event.target.value;
+            editor.getSession().setMode("ace/mode/" + contentType);
+        };
 
         var submit = document.getElementById("submit");
         submit.onclick = function (event) {

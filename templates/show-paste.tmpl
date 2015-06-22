@@ -24,7 +24,7 @@
         {% if contentType == "markdown" %}
             <div id="content"></div>
         {% else %}
-            <code id="content" class="language-{{ contentType }}"></code>
+            <pre><code id="content" class="language-{{ contentType }}"></code></pre>
         {% endif %}
     {% endif %}
 {% endblock %}
