@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 )
@@ -32,4 +33,9 @@ func BuildRootUrl(protocol string, domain string, port int, tls bool) string {
 	rootUrl += "/"
 
 	return rootUrl
+}
+
+func IsValidJson(s string) bool {
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
 }

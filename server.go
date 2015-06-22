@@ -102,6 +102,10 @@ func main() {
 
 		if err == nil {
 			if content.Encrypted {
+				if !utils.IsValidJson(content.Content) {
+					panic("Content of link is not valid JSON, possible XSS attack.")
+				}
+
 				log.Info("Link is encrypted, serving decryption page")
 				renderHtml("templates/encrypted.tmpl", pongo2.Context{"uri": content.Content}, response)
 			} else {
